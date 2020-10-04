@@ -37,14 +37,14 @@ class FaceData(VisionDataset):
             'val_data_path'   : '../data/classification_data/val_data/', 
     }
 
-    self.train_data_path = hparams.get('train_data_path', None)
-    self.test_data_path = hparams.get('test_data_path', None)
-    self.val_data_path = hparams.get('val_data_path', None)
-
 
     def __init__(self, root, train=True, transform=None, target_transform=None):
         super(FaceData, self).__init__(root, transform=transform,
                                     target_transform=target_transform)
+
+        self.train_data_path = hparams.get('train_data_path', None)
+        self.test_data_path = hparams.get('test_data_path', None)
+        self.val_data_path = hparams.get('val_data_path', None)
 
         self.train = train  # training set or test set
 
@@ -52,11 +52,11 @@ class FaceData(VisionDataset):
         if self.train:
             self.dataset = ImageFolder(root=self.train_data_path)
             # self.data, self.targets = torch.load(os.path.join(self.processed_folder, data_file))
-        else:
+        else: #test
             self.dataset = ImageFolder(root=self.test_data_path)
             # self.data, self.targets = torch.load(os.path.join(self.processed_folder, data_file)) 
             indices = [3, 2, 1, 18, 6, 8, 11, 17, 61, 16] # Manually picked support set
-            self.support_set = np.stack([self.transform(self.data[x][0]) for x in indices])   
+            self.support_set = np.stack([self.transform(self.dataset[x][0]) for x in indices])   
 
     def __getitem__(self, index):
         image1_index = np.random.randint(0, len(self.data))
@@ -82,47 +82,8 @@ class FaceData(VisionDataset):
     def __len__(self):
         return len(self.dataset)
 
-    @property
     def class_to_idx(self):
-        return {_class: i for i, _class in enumerate(self.classes)}
-
-    def _check_exists(self):
-        return (os.path.exists(os.path.join(self.processed_folder,
-                                            self.training_file)) and
-                os.path.exists(os.path.join(self.processed_folder,
-                                            self.test_file)))
-
-    def download(self):
-        """Download the MNIST data if it doesn't exist in processed_folder already."""
-
-        if self._check_exists():
-            return
-
-        makedir_exist_ok(self.raw_folder)
-        makedir_exist_ok(self.processed_folder)
-
-        # download files
-        for url, md5 in self.resources:
-            filename = url.rpartition('/')[2]
-            download_and_extract_archive(url, download_root=self.raw_folder, filename=filename, md5=md5)
-
-        # process and save as torch files
-        print('Processing...')
-
-        training_set = (
-            read_image_file(os.path.join(self.raw_folder, 'train-images-idx3-ubyte')),
-            read_label_file(os.path.join(self.raw_folder, 'train-labels-idx1-ubyte'))
-        )
-        test_set = (
-            read_image_file(os.path.join(self.raw_folder, 't10k-images-idx3-ubyte')),
-            read_label_file(os.path.join(self.raw_folder, 't10k-labels-idx1-ubyte'))
-        )
-        with open(os.path.join(self.processed_folder, self.training_file), 'wb') as f:
-            torch.save(training_set, f)
-        with open(os.path.join(self.processed_folder, self.test_file), 'wb') as f:
-            torch.save(test_set, f)
-
-        print('Done!')
+        return self.dataset.class_to_idx
 
     def extra_repr(self):
         return "Split: {}".format("Train" if self.train is True else "Test")

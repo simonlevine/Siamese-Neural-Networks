@@ -11,7 +11,7 @@ from torch import optim
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
-from data import MNIST
+from data import FaceData
 
 import pytorch_lightning as pl
 from pytorch_lightning import LightningModule
@@ -182,10 +182,10 @@ class Model(LightningModule):
         # init data generators
         transform = transforms.Compose([
                            transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
+                        #    transforms.Normalize((0.1307,), (0.3081,))
                        ])
         # dataset = CustomDataset(transform=transform)
-        dataset = MNIST(root='dataset', train=train, transform=transform, download=True)
+        dataset = FaceData(root='dataset', train=train, transform=transform)
 
         if not train:
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -210,17 +210,14 @@ class Model(LightningModule):
 
         return loader
 
-    @pl.data_loader
     def train_dataloader(self):
         logging.info('training data loader called')
         return self.__dataloader(train=True)
 
-    @pl.data_loader
     def val_dataloader(self):
         logging.info('val data loader called')
         return self.__dataloader(train=False)
 
-    @pl.data_loader
     def test_dataloader(self):
         logging.info('test data loader called')
         return self.__dataloader(train=False)
@@ -243,7 +240,7 @@ class Model(LightningModule):
         parser.add_argument('--learning_rate', default=0.001, type=float)
 
         # data
-        parser.add_argument('--data_root', default=os.path.join(root_dir, 'mnist'), type=str)
+        parser.add_argument('--data_root', default='../data', type=str)
 
         # training params (opt)
         parser.add_argument('--optimizer_name', default='adam', type=str)
